@@ -3,19 +3,17 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import datetime
 import uuid
-import sys # <-- Import the sys module
+import sys
 
 # --- Firebase Initialization ---
-# Important: Replace 'path/to/your/serviceAccountKey.json' with the actual path to your Firebase service account key.
-# You can download this file from your Firebase project settings.
 try:
-    # Use a relative path for the credentials file
     cred = credentials.Certificate('shanky-d5fa7-firebase-adminsdk-zsdrg-bfe3e8546c.json')
-    firebase_admin.initialize_app(cred)
+    # Check if the app is already initialized to prevent errors
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("Successfully connected to Firestore.")
 except Exception as e:
-    # Exit the program if the connection fails
     print(f"FATAL: Failed to connect to Firestore. Please ensure your service account key is correct.")
     print(f"Error: {e}")
     sys.exit(1)
@@ -23,14 +21,6 @@ except Exception as e:
 def add_session(msgs, escalation=False):
     """
     Adds a new session document to the 'sessions' collection in Firestore.
-    A unique session ID is generated automatically using UUID.
-
-    Args:
-        msgs (list): A list of messages in the session.
-        escalation (bool): A boolean indicating if the session is escalated.
-
-    Returns:
-        str: The generated session ID, or None if the operation fails.
     """
     if not db:
         print("Firestore is not connected. Cannot add session.")
@@ -57,32 +47,21 @@ def add_session(msgs, escalation=False):
 
 def add_message_to_session(sid, new_message, escalation=False):
     """
-    Appends a new message to an existing session's message list and updates the timestamp and escalation status.
-
-    Args:
-        sid (str): The ID of the session to update.
-        new_message (str): The new message to append.
-        escalation (bool, optional): The new escalation status. Defaults to False.
+    Appends a new message to an existing session's message list.
     """
-    if not db:
-        print("Firestore is not connected. Cannot add message.")
+    if not db or not sid:
+        print("Firestore is not connected or Session ID is missing.")
         return
-
-    if not sid:
-        print("Session ID is required to add a message.")
-        return
-
+    
     session_doc_ref = db.collection('sessions').document(sid)
 
     try:
-        # Atomically add a new message and update the escalation status.
-        # This also updates the last update time for the session.
         session_doc_ref.update({
             's_msgs_list': firestore.ArrayUnion([new_message]),
             's_updateTime': datetime.datetime.now(datetime.timezone.utc),
             's_escalation': escalation
         })
-        print(f"Successfully appended message to session {sid}. Escalation set to: {escalation}")
+        print(f"Successfully appended message to session {sid}.")
     except Exception as e:
         print(f"Error updating session {sid}: {e}. The session may not exist.")
 
@@ -95,35 +74,44 @@ def get_all_sessions():
         print("Firestore is not connected. Cannot get sessions.")
         return []
 
-    sessions_collection = db.collection('sessions')
     try:
-        docs = sessions_collection.stream()
-        sessions = []
-        for doc in docs:
-            sessions.append(doc.to_dict())
-        return sessions
+        docs = db.collection('sessions').stream()
+        return [doc.to_dict() for doc in docs]
     except Exception as e:
         print(f"Error getting sessions: {e}")
         return []
 
 def get_session_by_id(sid):
-    if not db:
-        print("Firestore is not connected. Cannot get session.")
+    """
+    Retrieves a single session document by its ID.
+    """
+    if not db or not sid:
         return None
-
-    if not sid:
-        print("Session ID is required to get a session.")
-        return None
-
-    session_doc_ref = db.collection('sessions').document(sid)
-
+    
     try:
-        doc = session_doc_ref.get()
-        if doc.exists:
-            return doc.to_dict()
-        else:
-            print(f"No session found with ID: {sid}")
-            return None
+        doc = db.collection('sessions').document(sid).get()
+        return doc.to_dict() if doc.exists else None
     except Exception as e:
         print(f"Error retrieving session {sid}: {e}")
         return None
+
+# #### NEW FUNCTION TO ADD AT THE END OF THE FILE ####
+def get_recent_messages(sid, last_n=4):
+    """
+    Retrieves the last N messages from a given session for context.
+
+    Args:
+        sid (str): The ID of the session.
+        last_n (int): The number of recent messages to retrieve.
+
+    Returns:
+        list: A list of the last N message dictionaries, or an empty list.
+    """
+    if not db or not sid:
+        return []
+
+    session_data = get_session_by_id(sid)
+    if session_data and 's_msgs_list' in session_data:
+        # Return the last 'last_n' messages from the list
+        return session_data['s_msgs_list'][-last_n:]
+    return []
