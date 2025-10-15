@@ -1,7 +1,7 @@
 import chromadb
 import json
 
-client=chromadb.PersistentClient(path="/Users/shank/Documents/AI_chatbot/data")
+client=chromadb.PersistentClient(path="./data")
 
 collection = client.get_or_create_collection(name="FAQ")
 
@@ -55,9 +55,9 @@ def generate_ids_from_dict_file(filepath):
 
 if __name__ == "__main__":
     # Read and parse the FAQ file
-    filepath = "/Users/shank/Documents/AI_chatbot/dataset/HDFC_Faq.txt"
+    filepath = "./dataset/HDFC_Faq.txt"
     content = read_text_file(filepath)
-    
+
     if content:
         try:
             # Parse JSON data

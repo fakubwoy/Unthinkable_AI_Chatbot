@@ -8,8 +8,7 @@ import uuid
 # Important: Replace 'path/to/your/serviceAccountKey.json' with the actual path to your Firebase service account key.
 # You can download this file from your Firebase project settings.
 try:
-    cred = credentials.Certificate('/Users/shank/Documents/AI_chatbot/shanky-d5fa7-firebase-adminsdk-zsdrg-bfe3e8546c.json')
-    firebase_admin.initialize_app(cred)
+    cred = credentials.Certificate('shanky-d5fa7-firebase-adminsdk-zsdrg-bfe3e8546c.json')
     db = firestore.client()
     print("Successfully connected to Firestore.")
 except Exception as e:

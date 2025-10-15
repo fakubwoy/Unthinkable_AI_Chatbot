@@ -6,7 +6,7 @@ import json
 import datetime
 
 # Initialize ChromaDB client
-client = chromadb.PersistentClient(path="/Users/shank/Documents/AI_chatbot/data")
+client = chromadb.PersistentClient(path="./data")
 collection = client.get_collection(name="FAQ")
 
 # Session state
