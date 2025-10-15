@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDFC Support Chatbot</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f9; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .chat-container { width: 90%; max-width: 600px; height: 90vh; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .chat-header { background: #004c97; color: white; padding: 16px; border-radius: 12px 12px 0 0; text-align: center; font-size: 1.2em; font-weight: bold; }
+        .chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .chat-message { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.5; }
+        .user-message { background-color: #e1f5fe; align-self: flex-end; border-radius: 18px 18px 4px 18px; }
+        .bot-message { background-color: #f1f1f1; align-self: flex-start; border-radius: 18px 18px 18px 4px; white-space: pre-wrap; }
+        .chat-input { display: flex; padding: 15px; border-top: 1px solid #e0e0e0; }
+        #userInput { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 1em; }
+        #sendButton { background-color: #004c97; color: white; border: none; border-radius: 20px; padding: 10px 20px; margin-left: 10px; cursor: pointer; font-size: 1em; font-weight: bold; }
+        #sendButton:hover { background-color: #003366; }
+        .thinking { color: #888; font-style: italic; align-self: flex-start; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">HDFC Banking Assistant</div>
+        <div class="chat-box" id="chatBox">
+            <div class="chat-message bot-message">Hello! How can I help you today?</div>
+        </div>
+        <form class="chat-input" id="chatForm">
+            <input type="text" id="userInput" placeholder="Type your question here..." autocomplete="off">
+            <button type="submit" id="sendButton">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const chatForm = document.getElementById('chatForm');
+        const userInput = document.getElementById('userInput');
+        const chatBox = document.getElementById('chatBox');
+        
+        let currentSessionId = null;
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userText = userInput.value.trim();
+            if (userText === "") return;
+
+            addMessage(userText, 'user-message');
+            userInput.value = '';
+
+            // Show a "thinking" indicator with two separate classes
+            const thinkingIndicator = addMessage("Thinking...", 'bot-message', 'thinking');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        query: userText,
+                        session_id: currentSessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                chatBox.removeChild(thinkingIndicator);
+                addMessage(data.answer, 'bot-message');
+                currentSessionId = data.session_id;
+
+            } catch (error) {
+                console.error("Error fetching chat response:", error);
+                chatBox.removeChild(thinkingIndicator);
+                addMessage("Sorry, I'm having trouble connecting. Please try again later.", 'bot-message');
+            }
+        });
+
+        // This function is now corrected to handle multiple class names
+        function addMessage(text, ...classNames) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message', ...classNames);
+            messageElement.textContent = text;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return messageElement;
+        }
+    </script>
+</body>
+</html>

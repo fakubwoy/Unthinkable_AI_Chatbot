@@ -1,0 +1,34 @@
+services:
+  # Your Python chatbot application
+  app:
+    build: .
+    container_name: chatbot_app
+    ports: # <-- Add this section
+      - "5001:5001"
+    volumes:
+      - .:/app # Mounts your local code into the container for live updates
+      - chromadb_data:/app/data # Persists the ChromaDB database
+    depends_on:
+      - ollama
+    networks:
+      - chatbot-net
+    tty: true # Keeps the container running
+
+  # The Ollama service
+  ollama:
+    image: ollama/ollama
+    container_name: ollama_service
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama # Persists the downloaded LLM models
+    networks:
+      - chatbot-net
+
+volumes:
+  chromadb_data:
+  ollama_data:
+
+networks:
+  chatbot-net:
+    driver: bridge

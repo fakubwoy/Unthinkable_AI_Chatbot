@@ -1,3 +1,12 @@
+# For vector database storage and retrieval
 chromadb
+
+# For making HTTP requests to the Ollama API
 requests
+
+# For connecting to and interacting with Google Firestore
 firebase-admin
+
+# For creating the REST API server
+Flask
+Flask-Cors

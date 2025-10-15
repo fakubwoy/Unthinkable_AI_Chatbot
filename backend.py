@@ -3,18 +3,22 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import datetime
 import uuid
+import sys # <-- Import the sys module
 
 # --- Firebase Initialization ---
 # Important: Replace 'path/to/your/serviceAccountKey.json' with the actual path to your Firebase service account key.
 # You can download this file from your Firebase project settings.
 try:
+    # Use a relative path for the credentials file
     cred = credentials.Certificate('shanky-d5fa7-firebase-adminsdk-zsdrg-bfe3e8546c.json')
+    firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("Successfully connected to Firestore.")
 except Exception as e:
-    print(f"Failed to connect to Firestore. Please ensure your service account key is correct.")
+    # Exit the program if the connection fails
+    print(f"FATAL: Failed to connect to Firestore. Please ensure your service account key is correct.")
     print(f"Error: {e}")
-    db = None
+    sys.exit(1)
 
 def add_session(msgs, escalation=False):
     """
@@ -24,7 +28,7 @@ def add_session(msgs, escalation=False):
     Args:
         msgs (list): A list of messages in the session.
         escalation (bool): A boolean indicating if the session is escalated.
-    
+
     Returns:
         str: The generated session ID, or None if the operation fails.
     """
@@ -67,7 +71,7 @@ def add_message_to_session(sid, new_message, escalation=False):
     if not sid:
         print("Session ID is required to add a message.")
         return
-    
+
     session_doc_ref = db.collection('sessions').document(sid)
 
     try:
@@ -110,7 +114,7 @@ def get_session_by_id(sid):
     if not sid:
         print("Session ID is required to get a session.")
         return None
-    
+
     session_doc_ref = db.collection('sessions').document(sid)
 
     try:
